@@ -22,9 +22,8 @@ xlsx@0.18.5/dist/xlsx.full.min.js"></script>
         [v-cloak] { display: none; }
 
         .day-nav { display: flex; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
-        
-        /* 解決手機時間顯示截斷問題 */
-        input[type="time"] { min-width: 100px; font-variant-numeric: tabular-nums; }
+        /* 解決時間顯示不全 */
+        input[type="time"] { min-width: 105px !important; }
         .app-container { max-width: 500px; margin: 0 auto; background: white; min-height: 100vh; position: relative; }
     </style>
 </head>
@@ -32,36 +31,29 @@ xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <div id="app" v-cloak class="app-container shadow-2xl">
     <div v-if="!isAuthorized" class="fixed inset-0 bg-white z-[200] flex flex-col items-center justify-center p-10 text-center">
-        <div class="mb-8">
-            <div class="text-6xl mb-4">✈️</div>
-
-            <h1 class="text-3xl font-black text-sky-600">A + K Travel</h1>
-            <p class="text-gray-400 mt-2 font-bold text-sm">請登入以存取專屬行程</p>
-        </div>
+        <h1 class="text-3xl font-black text-sky-600 mb-6">A + K 專屬行程</h1>
         <div v-if="!currentUser">
-            <button @click="login" class="bg-sky-600 text-white font-black py-4 px-8 rounded-2xl shadow-xl flex items-center gap-3">
-                Google 帳號登入
-            </button>
-        </div>
-        <div v-else class="bg-red-50 p-6 rounded-3xl">
-            <p class="text-red-500 font-black text-sm mb-4">未獲授權: {{currentUser.email}}</p>
-            <button @click="logout" class="text-sky-600 font-bold underline text-xs">切換帳號</button>
 
+            <button @click="login" class="bg-sky-600 text-white font-black py-4 px-8 rounded-2xl shadow-xl">使用 Google 帳號登入</button>
+        </div>
+        <div v-else class="text-red-500 font-black">
+            <p>未獲授權: {{currentUser.email}}</p>
+            <button @click="logout" class="mt-4 underline text-sm">登出並切換帳號</button>
         </div>
     </div>
 
     <div v-if="tripData.setup && isAuthorized">
         <header class="bg-sky-600 text-white p-4 sticky top-0 z-50 shadow-lg rounded-b-[1.5rem]">
             <div class="flex justify-between items-center mb-3">
-                <h1 class="font-black text-xl truncate pr-4">{{ tripData.setup.destination }}</h1>
+                <h1 class="font-black text-lg truncate">{{ tripData.setup.destination }}</h1>
                 <div class="flex gap-2">
-                    <button @click="exportToExcel" class="bg-white/20 p-2 rounded-full"><i class="ph ph-file-xls"></i></button>
-                    <button @click="logout" class="bg-white/20 p-2 rounded-full"><i class="ph ph-sign-out"></i></button>
+                    <button @click="exportToExcel" class="bg-white/20 p-2 rounded-full text-lg"><i class="ph ph-file-xls"></i></button>
+                    <button @click="logout" class="bg-white/20 p-2 rounded-full text-lg"><i class="ph ph-sign-out"></i></button>
                 </div>
-
             </div>
             <nav class="flex bg-black/10 p-1 rounded-2xl">
-                <button v-for="m in menu" :key="m.id" @click="view = m.id" :class="view === m.id ? 'bg-white text-sky-600' : 'text-sky-100'" class="flex-1 py-2 rounded-xl transition-all flex justify-center text-2xl">
+                <button v-for="m in menu" :key="m.id" @click="view = m.id" :class="view === m.id ? 'bg-white text-sky-600' : 'text-sky-100'" class="flex-1 py-1.5 rounded-xl transition-all flex justify-center text-xl">
+
                     <i :class="['ph-bold', m.icon]"></i>
                 </button>
             </nav>
@@ -70,140 +62,112 @@ xlsx@0.18.5/dist/xlsx.full.min.js"></script>
         <main class="p-4 pb-24">
             <section v-show="view === 'plan'" class="space-y-4">
                 <div class="day-nav gap-2 pb-2 scrollbar-hide">
-                    <button v-for="(day, idx) in 
+                    <button v-for="(day, idx) in tripData.days" :key="idx" @click="currentDayIdx = idx" :class="currentDayIdx === idx ? 'bg-sky-600 text-white' : 'bg-gray-100 text-gray-400'" class="px-4 py-2 rounded-xl font-bold shrink-0">
+                        D{{ idx + 1 }} <span class="text-[10px] block font-normal">{{ formatDayDate(idx) }}</span>
 
-tripData.days" :key="idx" @click="currentDayIdx = idx" :class="currentDayIdx === idx ? 'bg-sky-600 text-white' : 'bg-gray-200 text-gray-500'" class="px-5 py-2 rounded-2xl font-bold shrink-0 text-center">
-                        D{{ idx + 1 }}
-                        <span class="block text-[10px] opacity-70 font-normal">{{ formatDayDate(idx) }}</span>
                     </button>
                 </div>
 
-                <div v-if="tripData.days[currentDayIdx]" class="space-y-4">
-                    <div class="bg-blue-50 p-4 rounded-3xl border border-blue-100 flex items-center gap-2">
-                        <input v-model="tripData.days[currentDayIdx].city" 
-
-@change="fetchWeatherByDay(currentDayIdx)" placeholder="目的地城市" class="flex-1 bg-white p-3 rounded-xl text-sm font-bold outline-none border">
-                        <div v-if="tripData.days[currentDayIdx].weather" class="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border">
-                            <span class="text-xl">{{ tripData.days[currentDayIdx].weather.icon }}</span>
-                            <span class="text-xs font-black text-slate-600">{{ tripData.days[currentDayIdx].weather.temp }}°C</span>
+                <div v-if="tripData.days[currentDayIdx]" class="space-y-3">
+                    <div class="bg-blue-50 p-3 rounded-2xl border border-blue-100 flex items-center gap-2">
+                        <input v-model="tripData.days[currentDayIdx].city" @change="fetchWeatherByDay(currentDayIdx)" placeholder="目的地城市" class="flex-1 bg-white p-2 rounded-lg text-sm font-bold outline-none border">
+                        <div v-if="tripData.days[currentDayIdx].weather" class="flex items-center gap-1 bg-white p-2 rounded-lg border text-xs font-bold">
+                            <span>{{ tripData.days[currentDayIdx].weather.icon }}</span>
+                            <span>{{ tripData.days[currentDayIdx].weather.temp }}°C</span>
                         </div>
                     </div>
 
                     <div class="flex gap-2 items-center">
-                        <input v-
-
-model="tripData.days[currentDayIdx].hotel" @change="forceSync" placeholder="下榻酒店" class="flex-1 bg-orange-50 p-4 rounded-3xl text-sm font-bold outline-none border border-orange-100">
-                        <button @click="openGoogleMap(tripData.days[currentDayIdx].hotel)" class="bg-orange-500 text-white p-4 rounded-3xl shadow-md"><i class="ph ph-map-pin"></i></button>
+                        <input v-model="tripData.days[currentDayIdx].hotel" @change="forceSync" placeholder="下榻酒店" class="flex-1 bg-orange-50 p-3 rounded-2xl text-sm font-bold outline-none border border-orange-100">
+                        <button @click="openGoogleMap(tripData.days[currentDayIdx].hotel)" class="bg-orange-500 text-white p-3 rounded-2xl shadow-sm"><i class="ph ph-map-pin"></i></button>
                     </div>
 
-                    <div v-for="(item, i) in sortedItems" :key="i" class="bg-white p-4 rounded-3xl border border-gray-100 card-shadow space-y-2">
+
+                    <div v-for="(item, i) in sortedItems" :key="i" class="bg-white p-3 rounded-2xl border border-gray-100 card-shadow space-y-2">
                         <div class="flex items-center gap-2">
-                            <input type="time" v-model="item.time" @change="forceSync" class="font-black text-sky-600 text-lg 
-
-outline-none w-24">
+                            <input type="time" v-model="item.time" @change="forceSync" class="font-black text-sky-600 text-base outline-none w-24">
                             <input v-model="item.activity" @change="forceSync" placeholder="行程活動" class="flex-1 font-bold text-gray-700 text-sm outline-none">
-                            <button @click="removeItemByObject(item)" class="text-gray-300"><i class="ph ph-x-circle text-xl"></i></button>
+                            <button @click="removeItemByObject(item)" class="text-gray-300"><i class="ph ph-x-circle text-lg"></i></button>
                         </div>
-                        <div class="flex gap-2 items-center bg-slate-50 p-2 px-3 rounded-xl">
-                            <input v-model="item.location" @change="forceSync" placeholder="詳細地點" class="flex-1 bg-transparent text-xs text-gray-500 outline-none">
-                            <button @click="openGoogleMap(item.location)" class="text-sky-500"><i class="ph ph-map-
 
-pin"></i></button>
+                        <div class="flex gap-2 items-center bg-gray-50 p-2 rounded-lg">
+                            <input v-model="item.location" @change="forceSync" placeholder="地點名稱" class="flex-1 bg-transparent text-xs text-gray-500 outline-none">
+                            <button @click="openGoogleMap(item.location)" class="text-sky-500"><i class="ph ph-map-pin"></i></button>
                         </div>
                     </div>
-                    <button @click="addItem" class="w-full py-5 border-2 border-dashed border-gray-200 rounded-[2rem] text-gray-400 font-bold">+ 新增行程項目</button>
+                    <button @click="addItem" class="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl text-gray-400 font-bold text-sm">+ 新增項目</button>
                 </div>
             </section>
 
-            <section v-show="view === 'map'" class="space-y-4">
+            <section v-show="view === 'map'"class="space-y-4">
                 <div id="map" class="card-shadow"></div>
                 <div class="bg-white p-4 rounded-2xl border text-xs space-y-2">
-                    <p class="font-black text-gray-400 mb-2">本日景點預覽</p>
-                    <div v-for="loc in dayLocations" :key="loc" @click="searchAndMark(loc)" 
-
-class="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer">
-                        <span class="font-bold truncate">{{ loc }}</span>
+                    <p class="font-black text-gray-400 mb-2 uppercase">本日景點標記</p>
+                    <div v-for="loc in dayLocations" :key="loc" @click="searchAndMark(loc)" class="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer active:bg-sky-50 transition-all">
+                        <span class="font-bold truncate mr-2">{{ loc }}</span>
                         <i class="ph ph-magnifying-glass text-sky-500"></i>
                     </div>
                 </div>
             </section>
 
             <section v-show="view === 'transport'" class="space-y-4">
-                <div v-for="(t, i) in tripData.trans" :key="i" class="bg-white p-4 rounded-3xl border card-shadow space-y-3">
+                <div v-for="(t, i) in tripData.trans" :key="i" class="bg-white p-4 rounded-2xl border card-shadow space-y-3">
                     <div class="flex justify-between items-center">
-                        <select v-model="t.type" @change="forceSync" class="font-black text-sky-600 outline-none bg-transparent">
-                            <option>航班</
-
-option><option>火車/高鐵</option><option>地鐵/電車</option><option>巴士</option><option>的士/Uber</option><option>其他</option>
+                        <select v-model="t.type" @change="forceSync" class="font-black text-sky-600 outline-none">
+                            <option>航班</option><option>火車/高鐵</option><option>地鐵/電車</option><option>巴士</option><option>的士/Uber</option><option>其他</option>
                         </select>
-                        <button @click="tripData.trans.splice(i,1); forceSync()" class="text-red-400 text-xs font-bold">刪除</button>
+                        <button @click="tripData.trans.splice(i,1); forceSync()" class="text-red-300 text-sm">刪除</button>
                     </div>
+
                     <div class="grid grid-cols-2 gap-2">
-                        <div class="bg-gray-50 p-2 rounded-xl"><label class="text-[9px] block text-gray-400 font-bold">編號</label><input v-model="t.no" @change="forceSync" class="w-full bg-transparent text-sm font-bold outline-none"></div>
-                        <div class="bg-gray-50 p-2 rounded-xl"><label class="text-[9px] block 
-
-text-gray-400 font-bold">費用</label><input v-model="t.cost" @change="forceSync" class="w-full bg-transparent text-sm font-bold outline-none"></div>
-                        <div class="bg-gray-50 p-2 rounded-xl"><label class="text-[9px] block text-gray-400 font-bold">時間</label><input v-model="t.time" @change="forceSync" class="w-full bg-transparent text-sm font-bold outline-none"></div>
-                        <div class="bg-gray-50 p-2 rounded-xl"><label class="text-[9px] block text-gray-400 font-bold">時長</label><input v-model="t.duration" @change="forceSync" class="w-full bg-transparent text-sm font-bold outline-none"></div>
+                        <input v-model="t.no" @change="forceSync" placeholder="班次編號" class="bg-gray-50 p-2 rounded-lg text-xs outline-none font-bold">
+                        <input v-model="t.cost" @change="forceSync" placeholder="預估費用" class="bg-gray-50 p-2 rounded-lg text-xs outline-none font-bold">
+                        <input v-model="t.time" @change="forceSync" placeholder="時間" class="bg-gray-50 p-2 rounded-lg text-xs outline-none font-bold">
+                        <input v-model="t.duration" @change="forceSync" placeholder="預計時長" class="bg-gray-50 p-2 rounded-lg text-xs outline-none font-bold">
                     </div>
-                    <textarea v-model="t.note" 
-
-@change="forceSync" rows="2" class="w-full bg-gray-50 p-3 rounded-xl text-xs outline-none resize-none" placeholder="交通筆記..."></textarea>
+                    <textarea v-model="t.note" @change="forceSync" placeholder="交通筆記..." rows="2" class="w-full bg-gray-50 p-2 rounded-lg text-xs outline-none resize-none"></textarea>
                 </div>
-                <button @click="addTransport" class="w-full py-4 bg-sky-600 text-white rounded-[2rem] font-bold shadow-lg">+ 新增交通資訊</button>
+                <button @click="addTransport" class="w-full py-4 bg-sky-600 text-white rounded-2xl font-bold shadow-lg">+ 新增交通</button>
             </section>
 
             <section v-show="view === 'lists'" class="space-y-6">
                 <div v-for="lt in ['food', 'shopping']" :key="lt">
                     <h2 class="font-black flex items-center gap-2 mb-3">
-                        <i :class="lt==='food'?'ph-fill ph-fork-knife text-orange-500':'ph-fill ph-bag text-pink-500'"></i> 
-                        {{ lt === 'food' ? '必吃美食' : '購
+                        <i :class="lt==='food'?'ph-fill ph-fork-knife text-orange-500':'ph-fill ph-bag text-pink-500'" class="text-xl"></i>
+                        {{ lt === 'food' ? '必吃美食' : '購物清單' }}
 
-物清單' }}
                     </h2>
-                    <div class="bg-white rounded-3xl border shadow-sm divide-y">
-                        <div v-for="(item, i) in sortedList(lt)" :key="i" class="p-4 flex items-center gap-3">
+                    <div class="bg-white rounded-2xl border shadow-sm divide-y">
+                        <div v-for="(item, i) in sortedList(lt)" :key="i" class="p-4 flex items-center gap-3 bg-white">
                             <input type="checkbox" v-model="item.done" @change="forceSync" class="w-5 h-5 accent-sky-600">
-                            <input v-model="item.text" @change="forceSync" :class="{'line-through text-gray-300': item.done}" placeholder="輸入項目..." class="flex-1 outline-none text-sm font-bold">
+                            <input v-model="item.text" @change="forceSync" :class="{'line-through text-gray-300': item.done}" class="flex-1 outline-none text-sm font-bold">
                             <button @click="removeListItem(lt, item)" class="text-gray-300">×</button>
                         </div>
-                        <button @click="addListItem(lt)" class="w-full py-4 
-
-text-xs text-sky-500 font-black">+ 新增項目</button>
+                        <button @click="addListItem(lt)" class="w-full py-4 text-xs text-sky-500 font-black">+ 新增項目</button>
                     </div>
                 </div>
             </section>
 
             <section v-show="view === 'money'" class="space-y-4">
-                <div class="bg-orange-50 p-6 rounded-[2.5rem] border border-orange-100 text-center">
+                <div class="bg-orange-50 p-5 rounded-[2rem] text-center border border-orange-100 shadow-inner">
                     <div class="text-[10px] text-orange-400 font-bold mb-1 uppercase tracking-widest text-center">Total HKD Expenses</div>
                     <div class="text-3xl font-black text-orange-600">HK$ {{ totalHKDCost }}</div>
                 </div>
 
-                <div class="bg-white p-4 
+                <div class="bg-white p-4 rounded-2xl border shadow-sm space-y-3">
 
-rounded-3xl border shadow-sm space-y-4">
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="space-y-1">
-                            <label class="text-[9px] font-bold text-gray-400 px-1">類別</label>
-                            <select v-model="newExpense.type" class="w-full bg-slate-100 p-3 rounded-xl text-xs font-bold outline-none">
-                                <option>餐飲</option><option>交通</option><option>購物</option><option>住宿</option><option>其他</option>
-                            </select>
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-[9px] font-bold text-gray-400 px-1">外幣金額</label>
-                            <div class="flex gap-1">
-
-                                <input v-model="newExpense.currency" class="w-12 bg-slate-100 p-3 rounded-xl text-[10px] font-bold text-center outline-none" placeholder="幣值">
-                                <input v-model.number="newExpense.amount" type="number" class="flex-1 bg-slate-100 p-3 rounded-xl text-xs font-bold text-right outline-none" placeholder="金額">
-                            </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <select v-model="newExpense.type" class="bg-gray-100 p-2 rounded-lg text-xs font-bold outline-none border-none">
+                            <option>餐飲</option><option>交通</option><option>購物</option><option>住宿</option><option>其他</option>
+                        </select>
+                        <div class="flex gap-1">
+                            <input v-model="newExpense.currency" class="w-12 bg-gray-100 p-2 rounded-lg text-[10px] font-bold text-center outline-none" placeholder="幣別">
+                            <input v-model.number="newExpense.amount" type="number" class="flex-1 bg-gray-100 p-2 rounded-lg text-xs font-bold text-right outline-none" placeholder="金額">
                         </div>
                     </div>
                     <div class="flex gap-2">
-                        <input v-model="newExpense.item" placeholder="項目說明" class="flex-1 bg-slate-50 p-3 px-4 rounded-xl text-sm font-bold outline-none border">
-                        <button @click="addNewExpense" class="bg-
-
-sky-600 text-white px-6 py-3 rounded-xl font-black shadow-md">儲存</button>
+                        <input v-model="newExpense.item" placeholder="消費項目說明" class="flex-1 bg-gray-50 p-2 rounded-lg text-sm outline-none border">
+                        <button @click="addNewExpense" class="bg-sky-600 text-white px-4 py-2 rounded-lg font-bold text-sm">記錄</button>
                     </div>
                     <div class="flex justify-between items-center px-1">
                         <span class="text-[10px] text-gray-400 font-bold">匯率: 1 外幣 = {{newExpense.rate}} HKD</span>
@@ -212,47 +176,49 @@ sky-600 text-white px-6 py-3 rounded-xl font-black shadow-md">儲存</button>
                 </div>
 
                 <div class="space-y-2">
-                    <div v-for="(exp, i) in tripData.expenses" :key="i" class="bg-white p-4 rounded-2xl border shadow-sm flex items-center justify-between">
-                        <div class="flex items-center 
+                    <div v-for="(exp, i) in tripData.expenses" :key="i" class="bg-white p-3 rounded-xl border flex items-center justify-between shadow-sm">
+                        <div class="flex items-center gap-2 flex-1 min-w-0">
+                            <div class="flex flex-col gap-1 shrink-0">
+                                <button @click="moveExpense(i, -1)" class="text-gray-300 hover:text-sky-500 text-xs">▲</button>
+                                <button @click="moveExpense(i, 1)" class="text-gray-300 hover:text-sky-500 text-xs">▼</button>
 
-gap-3 flex-1 min-w-0 pr-4">
-                            <div class="flex flex-col gap-1">
-                                <button @click="moveExpense(i, -1)" class="text-gray-300 text-xs">▲</button>
-                                <button @click="moveExpense(i, 1)" class="text-gray-300 text-xs">▼</button>
                             </div>
-                            <div class="truncate">
-                                <div class="text-[8px] font-black text-gray-400 uppercase">{{ exp.type }}</div>
+                            <div class="truncate pr-2">
+                                <div class="text-[9px] font-black text-gray-400 uppercase">{{ exp.type }}</div>
                                 <div class="text-sm font-bold text-gray-700 truncate">{{ exp.item }}</div>
                             </div>
                         </div>
                         <div class="text-right shrink-0">
-
-                            <div class="text-[10px] text-gray-400">{{ exp.amount }} {{ exp.currency }}</div>
-                            <div class="text-base font-black text-sky-700">HK$ {{ Math.round(exp.amount * exp.rate).toLocaleString() }}</div>
+                            <div class="text-[9px] text-gray-400">{{ exp.amount }} {{ exp.currency }}</div>
+                            <div class="text-sm font-black text-sky-700">HK$ {{ Math.round(exp.amount * exp.rate).toLocaleString() }}</div>
                         </div>
-                        <button @click="tripData.expenses.splice(i,1); forceSync()" class="ml-4 text-red-200 text-xl">×</button>
+                        <button 
+
+@click="tripData.expenses.splice(i,1); forceSync()" class="ml-2 text-red-200">×</button>
                     </div>
                 </div>
             </section>
 
             <section v-show="view === 'summary'" class="space-y-4">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-black 
-
-text-gray-800">旅程總結</h2>
-                    <button @click="downloadPDF" class="bg-sky-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1">導出 PDF</button>
+                <div class="flex justify-between items-center px-2">
+                    <h2 class="text-xl font-black text-gray-800">行程總結</h2>
+                    <button @click="downloadPDF" class="bg-sky-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md flex items-center gap-1">
+                        <i class="ph ph-file-pdf"></i> 導出 PDF
+                    </button>
                 </div>
+
                 <div id="summary-content" class="bg-white p-6 rounded-[2rem] border shadow-sm space-y-6">
-                    <div class="text-center border-b pb-4">
+                    <div class="text-center pb-4 border-b">
                         <h3 class="text-2xl font-black text-sky-600">{{ tripData.setup.destination }}</h3>
+                        <p class="text-xs text-gray-400 font-bold mt-1">Travel Memory Summary</p>
                     </div>
                     <div v-for="(day, idx) in tripData.days" :key="idx" class="relative pl-6 border-l-2 border-sky-100 pb-2">
                         <div class="absolute -left-[9px] top-0 w-4 h-4 bg-sky-600 rounded-full border-4 border-white"></div>
-
                         <h4 class="font-black text-sky-600 text-sm mb-2">Day {{ idx + 1 }} | {{ day.city || '目的地' }}</h4>
+
                         <div class="space-y-2">
                             <div v-for="item in (day.items || []).sort((a,b)=>(a.time||'00:00').localeCompare(b.time||'00:00'))" :key="item.time" class="flex gap-3 text-xs">
-                                <span class="font-black text-gray-400 w-10">{{ item.time }}</span>
+                                <span class="font-black text-gray-400 w-10 shrink-0">{{ item.time }}</span>
                                 <span class="text-gray-700 font-bold">{{ item.activity }}</span>
                             </div>
                         </div>
@@ -261,7 +227,6 @@ text-gray-800">旅程總結</h2>
             </section>
         </main>
     </div>
-
 </div>
 
 <script type="module">
@@ -286,9 +251,8 @@ text-gray-800">旅程總結</h2>
     const { createApp, ref: vueRef, computed, watch, onMounted, nextTick } = Vue;
 
     createApp({
-
         setup() {
-            const whitelist = ['orkelvinh@gmail.com', 'iamhaukelvin@gmail.com', 'akwangel@gmail.com']; 
+            const whitelist = ['orkelvinh@gmail.com', 'akwangel@gmail.com', 'iamhaukelvin@gmail.com']; 
             const isAuthorized = vueRef(false);
             const currentUser = vueRef(null);
             const view = vueRef('plan');
@@ -302,7 +266,6 @@ text-gray-800">旅程總結</h2>
                 {id:'plan', icon:'ph-calendar'}, 
                 {id:'map', icon:'ph-map-pin'}, 
                 {id:'transport', icon:'ph-train'}, 
-
                 {id:'lists', icon:'ph-shopping-cart'}, 
                 {id:'money', icon:'ph-currency-dollar'},
                 {id:'summary', icon:'ph-clipboard-text'}
@@ -318,7 +281,6 @@ text-gray-800">旅程總結</h2>
                         }
                     } else { isAuthorized.value = false; }
                 });
-
             });
 
             const login = () => signInWithPopup(auth, provider);
@@ -333,8 +295,8 @@ text-gray-800">旅程總結</h2>
                         isSyncing.value = true;
                         if(!data.lists) data.lists = { food: [], shopping: [] };
                         if(!data.trans) data.trans = [];
-
                         if(!data.expenses) data.expenses = [];
+
                         tripData.value = data;
                         nextTick(() => { isSyncing.value = false; if(view.value === 'map') initMap(); });
                     }
@@ -346,11 +308,9 @@ text-gray-800">旅程總結</h2>
                 update(ref(db, 'trips/' + tripId.value), JSON.parse(JSON.stringify(tripData.value)));
             };
 
-            // 【核心】自動排序計算屬性
-            const sortedItems = computed(() => 
-
-{
+            const sortedItems = computed(() => {
                 const day = tripData.value.days[currentDayIdx.value];
+
                 if (!day || !day.items) return [];
                 return [...day.items].sort((a, b) => (a.time || "00:00").localeCompare(b.time || "00:00"));
             });
@@ -363,9 +323,9 @@ text-gray-800">旅程總結</h2>
             };
 
             const fetchWeatherByDay = async (idx) => {
-
                 const city = tripData.value.days[idx].city;
                 if (!city) return;
+
                 try {
                     const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=895284fb2d2c1d87e022411c469f445e&units=metric`);
                     const d = await res.json();
@@ -374,8 +334,7 @@ text-gray-800">旅程總結</h2>
                         tripData.value.days[idx].weather = { temp: Math.round(d.main.temp), icon: icons[d.weather[0].main] || '⛅' };
                         forceSync();
                     }
-                } catch (e) {}
-
+                } catch (e) { console.error("Weather error"); }
             };
 
             const addItem = () => {
@@ -386,9 +345,8 @@ text-gray-800">旅程總結</h2>
 
             const removeItemByObject = (item) => {
                 const idx = tripData.value.days[currentDayIdx.value].items.indexOf(item);
-                if (idx > -1) 
+                if (idx > -1) tripData.value.days[currentDayIdx.value].items.splice(idx, 1);
 
-tripData.value.days[currentDayIdx.value].items.splice(idx, 1);
                 forceSync();
             };
 
@@ -396,16 +354,15 @@ tripData.value.days[currentDayIdx.value].items.splice(idx, 1);
             const initMap = () => {
                 nextTick(() => {
                     if (mapInstance) return;
-                    mapInstance = L.map('map', { zoomControl: false }).setView([22.3193, 114.1694], 13);
+                    mapInstance = L.map('map', { zoomControl: false }).setView([35.68, 139.76], 13);
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapInstance);
                 });
             };
 
             const dayLocations = computed(() => {
-                const day = 
-
-tripData.value.days[currentDayIdx.value];
+                const day = tripData.value.days[currentDayIdx.value];
                 if (!day) return [];
+
                 const locs = day.items ? day.items.map(it => it.location).filter(l => l) : [];
                 if (day.hotel) locs.unshift(day.hotel);
                 return [...new Set(locs)];
@@ -413,13 +370,16 @@ tripData.value.days[currentDayIdx.value];
 
             const searchAndMark = async (q) => {
                 if (!q || !mapInstance) return;
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`);
-                const d = await res.json();
-                if (d.length > 0) {
-                    const { lat, lon } = d[0];
-                    mapInstance.setView([lat, lon],15);
-                    L.marker([lat, lon]).addTo(mapInstance).bindPopup(q).openPopup();
-                }
+                try {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`);
+                    const d = await res.json();
+                    if (d.length > 0) {
+                        const { lat, lon } = d[0];
+                        mapInstance.setView([lat, lon], 15);
+
+                        L.marker([lat, lon]).addTo(mapInstance).bindPopup(q).openPopup();
+                    }
+                } catch (e) { alert("找不到地點位置"); }
             };
 
             const sortedList = (lt) => {
@@ -431,8 +391,8 @@ tripData.value.days[currentDayIdx.value];
                 if (!tripData.value.lists[lt]) tripData.value.lists[lt] = [];
                 tripData.value.lists[lt].push({ text: '', done: false });
                 forceSync();
-            };
 
+            };
 
             const removeListItem = (lt, item) => {
                 const idx = tripData.value.lists[lt].indexOf(item);
@@ -446,7 +406,8 @@ tripData.value.days[currentDayIdx.value];
 
             const addNewExpense = () => {
                 if(!newExpense.value.amount || !newExpense.value.item) return;
-                tripData.value.expenses.unshift({...newExpense.value });
+
+                tripData.value.expenses.unshift({ ...newExpense.value });
                 newExpense.value.item = ''; newExpense.value.amount = null;
                 forceSync();
             };
@@ -461,7 +422,6 @@ tripData.value.days[currentDayIdx.value];
                 if (target < 0 || target >= tripData.value.expenses.length) return;
                 const temp = tripData.value.expenses[idx];
                 tripData.value.expenses[idx] = tripData.value.expenses[target];
-
                 tripData.value.expenses[target] = temp;
                 forceSync();
             };
@@ -470,38 +430,42 @@ tripData.value.days[currentDayIdx.value];
                 const wb = XLSX.utils.book_new();
                 const pRows = [];
                 tripData.value.days.forEach((d, i) => {
-                    pRows.push({ 日期: `Day ${i+1}`, 類型: '住宿', 內容: d.hotel });
+                    pRows.push({ 日期: `Day ${i+1}`, 類型: '住宿', 內容: d.hotel, 地點: '' });
                     if(d.items) d.items.forEach(it => pRows.push({ 日期: `Day ${i+1}`, 類型: '行程', 內容: it.activity, 時間: it.time, 地點: it.location }));
-                });
+                });             
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(pRows), "行程");
-                
 
-XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(tripData.value.trans || []), "交通");
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(tripData.value.trans || []), "交通");
+                const lRows = [];
+                ['food', 'shopping'].forEach(k => (tripData.value.lists[k] || []).forEach(it => lRows.push({ 類別: k, 內容: it.text, 狀態: it.done?'完成':'待辦' })));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(lRows), "清單");
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(tripData.value.expenses || []), "支出");
                 XLSX.writeFile(wb, `Trip_Plan.xlsx`);
             };
 
             const downloadPDF = () => {
+
                 const element = document.getElementById('summary-content');
-                html2pdf().from(element).save('Trip_Summary.pdf');
+                const opt = { margin: 1, filename: 'Trip_Summary.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
+                html2pdf().set(opt).from(element).save();
             };
 
             const addTransport = () => {
-
                 tripData.value.trans.push({ type: '航班', no: '', cost: '', time: '', duration: '', note: '' });
                 forceSync();
             };
 
-            const openGoogleMap = (q) => { if(q) window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank'); };
+            const openGoogleMap = (q) => { 
+                if(q) window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank'); 
+            };
 
             watch(view, (v) => { if(v === 'map') initMap(); });
 
             return {
                 view, menu, currentDayIdx, tripData, totalHKDCost, formatDayDate, newExpense, isAuthorized, currentUser, dayLocations, sortedItems,
-                login, logout, addItem, 
-
-removeItemByObject, addListItem, removeListItem, addTransport, addNewExpense, sortExpenses, moveExpense, exportToExcel, downloadPDF, openGoogleMap, forceSync, searchAndMark, fetchWeatherByDay, sortedList
+                login, logout, addItem, removeItemByObject, addListItem, removeListItem, addTransport, addNewExpense, sortExpenses, moveExpense, exportToExcel, downloadPDF, openGoogleMap, forceSync, searchAndMark, fetchWeatherByDay, sortedList
             };
+
         }
     }).mount('#app');
 </script>
