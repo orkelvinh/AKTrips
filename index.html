@@ -14,68 +14,81 @@
 xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
-        body { font-family: 'Noto Sans TC', sans-serif; -webkit-tap-highlight-color: transparent; background-color: #f8fafc; }
+        body { font-family: 'Noto Sans TC', sans-serif; -webkit-tap-highlight-color: transparent; background-color: #f1f5f9; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         #map { height: 400px; width: 100%; border-radius: 1.5rem; z-index: 1; border: 1px solid #e2e8f0; }
         .card-shadow { box-shadow: 0 4px 15px -3px rgba(0,0,0,0.05); }
         [v-cloak] { display: none; }
         .day-nav { display: flex; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
-    </style>
+        
 
+        /* 修復手機 UI：限制電腦版寬度並置中 */
+        .app-shell { 
+            max-width: 500px; 
+            margin: 0 auto; 
+            background: white; 
+            min-height: 100vh; 
+            box-shadow: 0 0 50px rgba(0,0,0,0.1);
+        }
+        input, select, textarea { min-width: 0; } /* 防止 Input 撐破排版 */
+    </style>
 </head>
 <body>
 
-<div id="app" v-cloak>
-    <div v-if="!isAuthorized" class="fixed inset-0 bg-sky-50 flex flex-col items-center justify-center z-[200] p-6 text-center">
-        <div class="bg-white p-10 rounded-[3rem] shadow-2xl flex flex-col items-center max-w-sm w-full">
-            <div class="text-6xl mb-6">🌍</div>
-            <h1 class="text-3xl font-black text-sky-600 mb-2">A + K Travel</h1>
-            <p class="text-gray-400 text-sm mb-8 font-bold">請登入以存取行程資料</p>
-            
-            <button @click="login" class="w-full bg-white border-2 border-gray-100 text-gray-700 font-black py-4 px-6 rounded-2xl shadow-sm flex items-center justify-center 
+<div id="app" v-cloak class="app-shell">
+    <div v-if="!isAuthorized" class="fixed inset-0 bg-white z-[200] flex flex-col items-center justify-center p-10 text-center max-w-[500px] mx-auto">
 
-gap-3 hover:bg-gray-50 transition-all active:scale-95">
-                <img src="https://www.google.com/favicon.ico" class="w-5">
-                使用 Google 帳號登入
+        <div class="mb-8">
+             <h1 class="text-3xl font-black text-sky-600">A + K Travel Plan</h1>
+            <p class="text-gray-400 mt-2 font-bold text-sm">Welcome</p>
+        </div>
+        
+        <div v-if="!currentUser">
+            <button @click="login" class="bg-sky-600 text-white font-black py-4 px-8 rounded-2xl shadow-xl flex items-center gap-3 active:scale-95 transition-all">
+                <img src="https://www.google.com/favicon.ico" class="w-5 bg-white rounded-full">
+                Google Login
             </button>
-            
-            <div v-if="currentUser && !isAuthorized" class="mt-6 p-4 bg-red-50 rounded-2xl">
-                <p class="text-red-500 text-xs font-bold">抱歉，您的帳號<br>({{currentUser.email}})<br>未獲得授權存取此頁面。</p>
-                <button @click="logout" class="mt-2 text-sky-600 text-[10px] font-black underline">切換帳號</button>
-            </div>
+        </div>
+        
+        <div v-else class="bg-red-50 p-6 
+
+rounded-3xl">
+            <p class="text-red-500 font-black text-sm mb-4">
+                抱歉，您的帳號<br>({{currentUser.email}})<br>不在授權名單內。
+            </p>
+            <button @click="logout" class="text-sky-600 font-bold underline text-xs">切換帳號</button>
         </div>
     </div>
 
     <div v-if="isAuthorized">
         <div v-if="showModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md flex items-center justify-center z-[100] p-6">
-            <div class="bg-white rounded-[2.5rem] p-8 w-full max-sm shadow-2xl space-y-6">
-                <h2 class="text-2xl font-black text-center text-gray-800">🌍PLAN YOUR NEW TRIP🌍</h2>
-                <div class="space-y-4">
-                    <input v-model="tempSetup.dest" placeholder="Destination (e.g.: Tokyo)" class="w-full bg-slate-50 p-4 rounded-2xl font-bold outline-none">
-                    <div class="bg-slate-50 p-2 rounded-xl">
-                        <label class="text-[9px] block text-gray-400 uppercase font-bold">StartDate</label>
+            <div class="bg-white rounded-[2.5rem] p-8 w-full shadow-2xl space-y-6">
+                <h2 class="text-2xl font-black text-center text-gray-800">🌍 開始新旅程</h2>
 
-                        <input type="date" v-model="tempSetup.start" class="bg-slate-50 p-5 rounded-xl text-xs outline-none">
-                        <label class="text-[9px] block text-gray-400 uppercase font-bold">End Date</label>
-                        <input type="date" v-model="tempSetup.end" class="bg-slate-50 p-5 rounded-xl text-xs outline-none">
+                <div class="space-y-4">
+                    <input v-model="tempSetup.dest" placeholder="目的地 (例如: 東京)" class="w-full bg-slate-50 p-4 rounded-2xl font-bold outline-none border">
+                    <div class="bg-slate-50 p-4 rounded-2xl border">
+                        <label class="text-[10px] block text-gray-400 font-bold uppercase mb-2">旅程日期</label>
+                        <div class="space-y-2">
+                            <input type="date" v-model="tempSetup.start" class="w-full bg-white p-3 rounded-xl text-sm outline-none border">
+                            <input type="date" v-model="tempSetup.end" class="w-full bg-white p-3 rounded-xl text-sm outline-none border">
+                        </div>
+
                     </div>
                 </div>
-                <button @click="createNewTrip" class="w-full bg-sky-600 text-white font-black py-4 rounded-2xl shadow-xl">Create</button>
+                <button @click="createNewTrip" class="w-full bg-sky-600 text-white font-black py-4 rounded-2xl shadow-xl">建立行程</button>
             </div>
         </div>
 
-        <div v-if="tripData.setup" class="max-
-
-w-md mx-auto bg-white min-h-screen flex flex-col shadow-2xl relative">
+        <div v-if="tripData.setup" class="flex flex-col relative min-h-screen">
             <header class="bg-sky-600 text-white p-4 sticky top-0 z-50 shadow-lg rounded-b-[2rem]">
                 <div class="flex justify-between items-center mb-3">
                     <h1 class="font-black text-xl truncate pr-4">{{ tripData.setup.destination }}</h1>
                     <div class="flex gap-2 shrink-0">
-                        <button @click="exportToExcel" class="bg-white/20 p-2 rounded-full"><i class="ph ph-file-xls"></i></button>
-                        <button @click="copyShareLink" class="bg-white/20 p-2 rounded-full"><i class="ph ph-share-network"></i></button>
-                        <button @click="logout" class="bg-white/20 p-2 rounded-full"><i 
+                        <button 
 
-class="ph ph-sign-out"></i></button>
+@click="exportToExcel" class="bg-white/20 p-2 rounded-full"><i class="ph ph-file-xls"></i></button>
+                        <button @click="logout" class="bg-white/20 p-2 rounded-full"><i class="ph ph-sign-out"></i></button>
                     </div>
                 </div>
 
@@ -84,208 +97,166 @@ class="ph ph-sign-out"></i></button>
                         <i :class="['ph-bold', m.icon]"></i>
                     </button>
                 </nav>
+
             </header>
 
             <main class="flex-1 p-4 pb-24">
                 <section v-show="view === 'plan'" class="space-y-4">
-
                     <div class="day-nav gap-2 pb-2 scrollbar-hide">
-                        <button v-for="(day, idx) in tripData.days" :key="idx" @click="currentDayIdx = idx" :class="currentDayIdx === idx ? 'bg-sky-600 text-white shadow-md' : 'bg-gray-100 text-gray-500'" class="px-5 py-2 rounded-2xl font-bold transition-all shrink-0 text-center">
+                        <button v-for="(day, idx) in tripData.days" :key="idx" @click="currentDayIdx = idx" :class="currentDayIdx === idx ? 'bg-sky-600 text-white shadow-md' : 'bg-gray-200 text-gray-500'" class="px-5 py-2 rounded-2xl font-bold transition-all shrink-0 text-center">
                             D{{ idx + 1 }}
                             <span class="block text-[10px] opacity-70 font-normal">{{ formatDayDate(idx) }}</span>
                         </button>
                     </div>
 
+
                     <div v-if="tripData.days[currentDayIdx]" class="space-y-4">
-                        <div class="flex justify-
-
-between items-center px-2">
-                            <span class="text-xs font-black text-slate-400">ITINERARY</span>
-                            <button @click="sortPlanByTime" class="text-[10px] bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full font-bold">
-                                <i class="ph ph-sort-ascending"></i> SORT
-                            </button>
-                        </div>
-
                         <div class="bg-blue-50 p-4 rounded-3xl border border-blue-100 card-shadow">
-                            <label class="text-blue-600 font-black text-[10px] uppercase block mb-1">D{{currentDayIdx+1}} Visit City & Weather</label>
+                            <label class="text-blue-600 font-black text-[10px] uppercase block mb-1">城市與天氣</label>
                             <div class="flex gap-2 items-center">
+                                <input v-model="tripData.days[currentDayIdx].city" @change="fetchWeatherByDay(currentDayIdx)" placeholder="輸入城市" class="flex-1 bg-white p-3 rounded-xl text-sm font-bold outline-none border">
+                                <div v-if="tripData.days[currentDayIdx].weather" class="flex items-center gap-2 bg-white 
 
-                                <input v-model="tripData.days[currentDayIdx].city" @change="fetchWeatherByDay(currentDayIdx)" placeholder="Enter City (e.g. Osaka)" class="flex-1 bg-white p-3 rounded-xl text-sm font-bold outline-none border border-blue-50">
-                                <div v-if="tripData.days[currentDayIdx].weather" class="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-blue-50">
+px-3 py-2 rounded-xl border">
                                     <span class="text-xl">{{ tripData.days[currentDayIdx].weather.icon }}</span>
-                                    <div class="text-[10px] leading-tight font-black text-slate-600">
-                                        {{ tripData.days[currentDayIdx].weather.temp }}°C<br>
-
-                                        <span class="text-[8px] text-blue-400">{{ tripData.days[currentDayIdx].weather.desc}}</span>
-                                    </div>
+                                    <span class="text-xs font-black text-slate-600">{{ tripData.days[currentDayIdx].weather.temp }}°C</span>
                                 </div>
                             </div>
                         </div>
 
                         <div class="bg-orange-50 p-4 rounded-3xl border border-orange-100 card-shadow">
-                            <label class="text-orange-600 font-black text-[10px] uppercase block mb-1">D{{currentDayIdx+1}} Hotel</label>
+                            <label class="text-orange-600 font-black text-[10px] uppercase block mb-1">本日下榻酒店</label>
                             <div class="flex gap-2">
-                                <input v-model="tripData.days[currentDayIdx].hotel" placeholder="Enter Hotel Name" class="flex-1 bg-white p-3 rounded-xl text-
 
-sm outline-none">
+                                <input v-model="tripData.days[currentDayIdx].hotel" @change="forceSync" placeholder="輸入酒店名稱" class="flex-1 bg-white p-3 rounded-xl text-sm outline-none border">
                                 <button @click="openGoogleMap(tripData.days[currentDayIdx].hotel)" class="bg-blue-500 text-white px-3 rounded-xl"><i class="ph-bold ph-map-pin"></i></button>
                             </div>
                         </div>
 
-                        <div v-for="(item, i) in tripData.days[currentDayIdx].items" :key="i" class="bg-white p-4 rounded-3xl border border-gray-100 card-shadow space-y-2">
-                            <div v-if="timeConflictMap[currentDayIdx]?.includes(i)" class="text-[10px] text-amber-500 font-bold mt-1">⚠ Time Overlapping</div>
+                        <div v-for="(item, i) in sortedItems" :key="i" class="bg-white p-4 rounded-3xl border border-gray-100 card-shadow space-y-2">
                             <div class="flex items-center gap-2">
-                                <input type="time" v-
+                                <input type="time" v-model="item.time" @change="forceSync" 
 
-model="item.time" class="font-black text-sky-600 text-lg outline-none w-28 shrink-0">
-                                <input v-model="item.activity" placeholder="Itinerary" class="flex-1 font-bold text-gray-700 outline-none">
-                                <button @click="tripData.days[currentDayIdx].items.splice(i,1)" class="text-gray-300"><i class="ph ph-x-circle text-xl"></i></button>
+class="font-black text-sky-600 text-lg outline-none w-24 shrink-0">
+                                <input v-model="item.activity" @change="forceSync" placeholder="行程活動" class="flex-1 font-bold text-gray-700 outline-none text-sm">
+                                <button @click="removeItem(i)" class="text-gray-300"><i class="ph ph-x-circle text-xl"></i></button>
                             </div>
                             <div class="flex gap-2 items-center bg-slate-50 p-2 px-3 rounded-xl">
-                                <input v-model="item.location" placeholder="Location" class="flex-1 bg-transparent text-xs text-gray-500 outline-none">
-                                <button @click="openGoogleMap(item.location)" 
+                                <input v-model="item.location" @change="forceSync" placeholder="詳細地點" class="flex-1 bg-transparent text-xs text-gray-500 outline-none">
+                                <button 
 
-class="text-indigo-500"><i class="ph-bold ph-arrow-square-out"></i></button>
+@click="openGoogleMap(item.location)" class="text-indigo-500"><i class="ph-bold ph-arrow-square-out"></i></button>
                             </div>
                         </div>
-                        <button @click="addItem" class="w-full py-5 border-2 border-dashed border-gray-200 rounded-[2rem] text-gray-400 font-bold hover:bg-slate-50">+ Add Itinerary</button>
+                        
+                        <button @click="addItem" class="w-full py-5 border-2 border-dashed border-gray-200 rounded-[2rem] text-gray-400 font-bold hover:bg-slate-50">+ 新增行程項目</button>
                     </div>
                 </section>
 
                 <section v-show="view === 'map'" class="space-y-4">
                     <div id="map" class="card-shadow"></div>
-                    <button @click="centerOnUser" class="w-full py-4 bg-white border border-gray-200 rounded-2xl font-bold flex items-center justify-center gap-2">
-                        <i class="ph-bold ph-
+                    <button @click="centerOnUser" class="w-full py-4 bg-white border border-gray-200 rounded-2xl font-bold flex items-
 
-navigation-arrow text-indigo-600"></i> My Location
+center justify-center gap-2 shadow-sm">
+                        <i class="ph-bold ph-navigation-arrow text-indigo-600"></i> 我的位置
                     </button>
                 </section>
 
                 <section v-show="view === 'transport'" class="space-y-4">
-                    <div v-for="(t, i) in tripData.trans" :key="i" class="bg-white rounded-3xl card-shadow border p-3 space-y-3">
+                    <div v-for="(t, i) in tripData.trans" :key="i" class="bg-white rounded-3xl card-shadow border p-4 space-y-3">
                         <div class="flex justify-between items-center">
-                            <select v-model="t.type" class="font-black text-blue-600 outline-none bg-transparent">
-                                <option>Flight</option><option>Train</option><option>Subway/Tram</option><option>Bus</option><option>Taxi/Uber</option><option>Other</option>
+                            <select v-model="t.type" @change="forceSync" class="font-black text-blue-600 outline-none bg-transparent">
+                                <option>Flight</option><option>Train</option><option>Subway/Tram</
 
+option><option>Bus</option><option>Taxi/Uber</option><option>Other</option>
                             </select>
-                            <button @click="tripData.trans.splice(i,1)" class="text-red-300 text-xs font-bold">Delete</button>
+                            <button @click="tripData.trans.splice(i,1); forceSync()" class="text-red-400 text-xs font-bold">刪除</button>
                         </div>
                         <div class="grid grid-cols-2 gap-2">
-                            <div class="bg-slate-50 p-2 rounded-xl"><label class="text-[9px] block text-gray-400 uppercase font-bold">Route</label><input v-model="t.no" class="w-full bg-transparent text-sm font-bold outline-none"></div>
-                            <div class="bg-slate-50 p-2 rounded-xl"><label class="text-[9px] block text-gray-400 uppercase font-bold">Fares</label><input v-model="t.cost" class="w-full bg-transparent text-sm font-bold outline-none"></div>
-                        </div>
+                            <div class="bg-slate-50 p-2 rounded-xl"><label class="text-[9px] block text-gray-400 font-bold">班次/編號</label><input v-model="t.no" @change="forceSync" class="w-full bg-transparent text-sm font-bold outline-none"></div>
+                            <div class="bg-slate-50 p-2 rounded-xl"><label class="text-[9px] block text-gray-400 font-bold">費用</label><input v-model="t.cost" 
 
+@change="forceSync" class="w-full bg-transparent text-sm font-bold outline-none"></div>
+                        </div>
                         <div class="grid grid-cols-2 gap-2">
-                            <div class="bg-slate-50 p-2 rounded-xl"><label class="text-[9px] block text-gray-400 uppercase font-bold">Time</label><input v-model="t.time" class="w-full bg-transparent text-sm font-bold outline-none"></div>
-                            <div class="bg-slate-50 p-2 rounded-xl"><label class="text-[9px] block text-gray-400 uppercase font-bold">Duration</label><input v-model="t.duration" class="w-full bg-transparent text-sm font-bold outline-none"></div>
+                            <div class="bg-slate-50 p-2 rounded-xl"><label class="text-[9px] block text-gray-400 font-bold">時間</label><input v-model="t.time" @change="forceSync" class="w-full bg-transparent text-sm font-bold outline-none"></div>
+                            <div class="bg-slate-50 p-2 rounded-xl"><label class="text-[9px] block text-gray-400 font-bold">時長</label><input v-model="t.duration" @change="forceSync" class="w-full bg-transparent text-sm font-bold outline-none"></div>
                         </div>
-                        <textarea v-model="t.note" rows="3" class="w-full bg-slate-50 p-3 rounded-xl text-xs font-bold outline-none resize-none" placeholder="Remark..."></textarea>
 
+                        <textarea v-model="t.note" @change="forceSync" rows="2" class="w-full bg-slate-50 p-3 rounded-xl text-xs font-bold outline-none resize-none border-none" placeholder="備註資訊..."></textarea>
                     </div>
-                    <button @click="addTransport" class="w-full py-3 bg-blue-600 text-white rounded-[2rem] font-black">+ Add Transport</button>
+                    <button @click="addTransport" class="w-full py-4 bg-blue-600 text-white rounded-[2rem] font-black shadow-lg">+ 新增交通資訊</button>
                 </section>
 
                 <section v-show="view === 'lists'" class="space-y-6">
                     <div v-for="lt in ['food', 'shopping']" :key="lt">
-                        <h2 class="font-black flex items-center gap-2 mb-3 capitalize"><i :class="lt === 'food' ? 'ph-fill ph-fork-knife text-orange-500' : 'ph-fill ph-bag text-pink-500'"></i> {{ lt }} List</h2>
+                        <h2 class="font-black flex items-center gap-2 mb-3 capitalize px-2">
+                            <i :class="lt === 'food' ? 'ph-fill ph-fork-knife text-orange-500' : 'ph-fill ph-bag text-pink-500'"></i> 
+
+                            {{ lt === 'food' ? '必吃美食' : '購物清單' }}
+                        </h2>
                         <div class="bg-white rounded-3xl border shadow-sm divide-y">
-                            <div v-for="(item, i) in (sortedLists[lt] || [])" :key="i" class="p-4 flex items-center gap-3">
+                            <div v-for="(item, i) in (tripData.lists[lt] || [])" :key="i" class="p-4 flex items-center gap-3">
+                                <input type="checkbox" v-model="item.done" @change="forceSync" class="w-5 h-5 accent-indigo-600 shrink-0">
+                                <input v-model="item.text" @change="forceSync" :class="{'line-through text-gray-300': item.done}" placeholder="輸入項目" class="flex-1 outline-none text-sm font-bold">
+                                <button @click="tripData.lists[lt].splice(i,1); forceSync()" class="text-gray-300">×</
 
-                                <input type="checkbox" v-model="item.done" class="w-5 h-5 accent-indigo-600 shrink-0">
-                                <input v-model="item.text" :class="{'line-through text-gray-300': item.done}" placeholder="Item" class="flex-1 outline-none text-sm font-bold">
-                                <button @click="openGoogleSearch(item.text)" class="text-indigo-400"><i class="ph ph-magnifying-glass"></i></button>
-                                <button @click="tripData.lists[lt].splice(i,1)" class="text-gray-200">×</button>
+button>
                             </div>
-                            <button @click="addListItem(lt)" class="w-full py-4 text-xs text-indigo-500 font-black">+ New Item</button>
+                            <button @click="addListItem(lt)" class="w-full py-4 text-xs text-indigo-500 font-black">+ 新增項目</button>
                         </div>
-
                     </div>
                 </section>
 
                 <section v-show="view === 'money'" class="space-y-4">
-                    <div class="bg-[#fdf2e9] p-4 rounded-[2.5rem] shadow-sm border border-orange-100">
-                        <div class="text-2xl font-black text-orange-900">Total HK$ {{ totalHKDCost }}</div>
-                    </div>
-                    <div class="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm space-y-3">
-                        <div class="flex gap-2">
-                            <select v-model="newExpense.type" class="w-24 bg-slate-100 p-2 rounded-xl text-xs font-bold outline-none"><option>F&B</option><option>Transport</
+                    <div class="bg-orange-50 p-6 rounded-[2.5rem] shadow-inner border border-orange-100 text-center">
+                        <div class="text-[10px] text-orange-400 font-bold mb-1 uppercase tracking-widest">Total HKD Expenses</div>
+                        <div class="text-3xl font-black text-orange-900">HK$ {{ 
 
-option><option>Shopping</option><option>Hotel</option><option>Other</option></select>
-                            <input v-model="newExpense.currency" type="text" placeholder="CUR" class="w-16 bg-slate-100 p-2 rounded-xl text-xs font-bold text-center outline-none">
-                            <input v-model.number="newExpense.amount" type="number" placeholder="Amount"class="flex-1 bg-slate-100 p-2 rounded-xl text-xs font-bold text-right outline-none">
+totalHKDCost }}</div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-3xl border shadow-sm space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="space-y-1">
+                                <label class="text-[9px] font-bold text-gray-400 px-1">類別</label>
+                                <select v-model="newExpense.type" class="w-full bg-slate-100 p-3 rounded-xl text-xs font-bold outline-none">
+                                    <option>F&B</option><option>Transport</option><option>Shopping</option><option>Hotel</option><option>Other</option>
+                                </select>
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-[9px] font-bold text-gray-400 px-1">外幣金額 (如 JPY)</label>
+                                <div class="flex gap-1">
+                                    <input v-model="newExpense.currency" type="text" placeholder="幣值" class="w-12 bg-slate-100 p-3 rounded-xl text-[10px] font-bold text-center outline-none">
+                                    <input v-model.number="newExpense.amount" type="number" placeholder="金額" class="flex-1 bg-slate-100 p-3 rounded-xl text-xs font-bold text-right outline-none">
+                                </div>
+                            </div>
                         </div>
                         <div class="flex gap-2">
-                            <input v-model="newExpense.item" placeholder="Description" class="flex-1 bg-slate-50 p-2 px-4 rounded-xl text-sm font-bold outline-none">
-
-                            <button @click="addNewExpense" class="bg-[#0088cc] text-white px-6 py-2 rounded-xl font-black active:scale-95 transition-all">Saved</button>
+                            <input v-model="newExpense.item" placeholder="消費項目說明" class="flex-1 bg-slate-50 p-3 px-4 rounded-xl text-sm font-bold outline-none border">
+                            <button @click="addNewExpense" class="bg-sky-600 text-white px-6 py-3 rounded-xl font-black active:scale-95 transition-all shadow-md">儲存</button>
                         </div>
                         <div class="flex gap-2 items-center px-2 text-[10px] font-bold text-gray-400">
-                            Exchange Rate (toHKD): <input v-model.number="newExpense.rate" type="number" step="0.001" class="w-16 bg-transparent text-indigo-600 border-b outline-none">
+                            當前匯率 (1 外幣 = ? HKD): <input v-model.number="newExpense.rate" type="number" step="0.0001" class="w-20 bg-transparent text-indigo-600 border-b outline-none text-center">
                         </div>
                     </div>
-                    <div class="flex justify-end px-2">
-                        <button @click="expenseGroupBy = !expenseGroupBy" :class="expenseGroupBy 
 
-? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'" class="text-[10px] font-black py-1 px-3 rounded-full transition-all">
-                            {{ expenseGroupBy ? 'By Item' : 'Show ALL' }}
-                        </button>
-                    </div>
-                    <div class="space-y-4">
-                        <div v-if="expenseGroupBy" v-for="(group, type) in groupedExpenses" :key="type" class="space-y-2">
-                            <div class="text-[10px] font-black text-slate-400 uppercase flex justify-between px-2"><span>{{ type }}</span><span>HK$ {{ group.total }}</span></div>
-                            <div v-for="exp in group.items" class="bg-white p-3 rounded-2xl border border-gray-50 shadow-sm flex items-center justify-between">
-                                <div class="flex items-
+                    <div class="space-y-2">
 
-center gap-2">
-                                    <span :class="getTypeClass(exp.type)" class="text-[9px] px-2 py-0.5 rounded-lg font-black uppercase">{{ exp.type }}</span>
-                                    <span class="text-sm font-bold text-slate-700">{{ exp.item }}</span>
+                        <div v-for="(exp, i) in tripData.expenses" :key="i" class="bg-white p-4 rounded-2xl border shadow-sm flex items-center justify-between group">
+                            <div class="flex-1 min-w-0 pr-4">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span :class="getTypeClass(exp.type)" class="text-[8px] px-2 py-0.5 rounded-md font-black uppercase">{{ exp.type }}</span>
+                                    <span class="text-xs text-slate-400 font-bold">{{ exp.amount }} {{ exp.currency }}</span>
                                 </div>
-                                <span class="font-black text-cyan-700 text-sm">$ {{ Math.round(exp.amount *exp.rate).toLocaleString() }}</span>
+                                <div class="text-sm font-bold text-slate-700 truncate">{{ exp.item }}</div>
                             </div>
-                        </div>
-                        <div v-if="!expenseGroupBy" class="space-y-2">
-                            <div v-for="(exp, i) in tripData.expenses" :key="i" class="bg-white p-3 rounded-2xl border border-gray-50 
 
-shadow-sm relative group flex items-center">
-                                <div class="flex flex-col gap-1 mr-3 shrink-0">
-                                    <button @click="moveExpense(i, -1)" class="text-slate-300 hover:text-indigo-500"><i class="ph ph-caret-up"></i></button>
-                                    <button @click="moveExpense(i, 1)" class="text-slate-300 hover:text-indigo-500"><i class="ph ph-caret-down"></i></button>
-                                </div>
-                                <div class="flex-1 grid grid-cols-12 items-center">
-                                    <div class="col-span-3"><span :class="getTypeClass(exp.type)" class="text-[9px] px-2 py-0.5 rounded-lg font-black uppercase">{{ exp.type }}</span></div>
-
-                                    <div class="col-span-4 text-sm font-bold text-slate-700 truncate">{{ exp.item }}</div>
-                                    <div class="col-span-2 text-[8px] text-slate-400 text-right uppercase">{{ exp.amount }}<br>{{ exp.currency }}</div>
-                                    <div class="col-span-3 text-right font-black text-cyan-700 text-sm">$ {{ Math.round(exp.amount * exp.rate).toLocaleString() }}</div>
-                                </div>
-                                <button @click="tripData.expenses.splice(i,1)" class="absolute -right-2 -top-2 bg-red-100 text-red-500 rounded-full w-5 h-5 text-xs opacity-0 group-hover:opacity-100">×</button>
+                            <div class="text-right shrink-0">
+                                <div class="font-black text-sky-700 text-base">HK$ {{ Math.round(exp.amount * exp.rate).toLocaleString() }}</div>
+                                <button @click="tripData.expenses.splice(i,1); forceSync()" class="text-red-300 text-[10px] font-bold hover:text-red-500">刪除</button>
                             </div>
-                        </div>
-                    </div>
-
-                </section>
-
-                <section v-show="view === 'overview'" class="space-y-4">
-                    <div class="flex justify-end items-center px-2">
-                        <button @click="exportOverviewPDF" class="text-[14px] bg-indigo-50 text-red-600 px-3 py-1 rounded-full font-bold">
-                            <i class="ph ph-file-pdf"></i> PDF
-                        </button>
-                    </div>
-                    <div v-for="(day, dIdx) in (tripData.days || [])" :key="dIdx" class="bg-white p-4 rounded-3xl border border-gray-100 card-shadow mb-4">
-                        <div class="flex justify-between items-center mb-2">
-                            <div class="font-black text-
-
-slate-700">Day {{ dIdx + 1 }} <span class="text-xs text-slate-400 ml-2">{{ formatDayDate(dIdx) }}</span></div>
-                            <div class="text-xs font-bold text-indigo-500">{{ day.city || '—' }}</div>
-                        </div>
-                        <div v-if="day.hotel" class="text-[11px] text-slate-500 font-bold mb-2 flex items-center gap-1">
-                            <i class="ph-bold ph-house-line text-emerald-500"></i> {{ day.hotel }}
-                        </div>
-                        <div v-if="!day.items || day.items.length === 0" class="text-xs text-slate-400 italic">No itinerary</div>
-                        <div v-for="(it, i) in [...(day.items || [])].sort((a,b)=>(a.time||'').localeCompare(b.time||''))" :key="i" class="flex text-sm py-1 border-b last:border-b-0">
-
-                            <div class="w-16 font-black text-sky-600 shrink-0">{{ it.time || '--:--' }}</div>
-                            <div class="flex-1 text-slate-700 truncate">{{ it.activity || '—' }}</div>
                         </div>
                     </div>
                 </section>
@@ -295,21 +266,21 @@ slate-700">Day {{ dIdx + 1 }} <span class="text-xs text-slate-400 ml-2">{{ forma
 </div>
 
 <script type="module">
+
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, onValue, set, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-    // ===== 新增：Auth 模組 =====
     import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
     const firebaseConfig = { 
-        apiKey: "AIzaSyBcCI6Qic0_3tXz6fKobZ6Mj9p9ZCNlzZk", authDomain: "aktrips-f3098.firebaseapp.com", 
-        projectId: "aktrips-f3098", storageBucket: "aktrips-f3098.firebasestorage.app", 
-        messagingSenderId: "534453459530", appId: "1:534453459530:web:14d840aaa533e6e6e9e4b3"
+        apiKey: "AIzaSyBcCI6Qic0_3tXz6fKobZ6Mj9p9ZCNlzZk", 
+        authDomain: "aktrips-f3098.firebaseapp.com", 
+        projectId: "aktrips-f3098", 
+        storageBucket: "aktrips-f3098.firebasestorage.app", 
+        appId:"1:534453459530:web:14d840aaa533e6e6e9e4b3",
+        databaseURL: "https://aktrips-f3098-default-rtdb.firebaseio.com"
     };
 
-    const fbApp = 
-
-initializeApp(firebaseConfig);
+    const fbApp = initializeApp(firebaseConfig);
     const db = getDatabase(fbApp);
     const auth = getAuth(fbApp);
     const provider = new GoogleAuthProvider();
@@ -318,34 +289,49 @@ initializeApp(firebaseConfig);
 
     createApp({
         setup() {
-            // ===== 新增：授權狀態變數 =====
-            const currentUser = vueRef(null);
-            const isAuthorized = vueRef(false);
-            // 在此修改你的白名單 Email
+            // --- 授權白名單設定 ---
             const whitelist = ['orkelvinh@gmail.com', 'akwangel@gmail.com', 'iamhaukelvin@gmail.com']; 
 
+            const isAuthorized = vueRef(false);
+            const currentUser = vueRef(null);
             const view = vueRef('plan');
             const currentDayIdx = vueRef(0);
-
             const showModal = vueRef(false);
             const tripId = vueRef(null);
-            const mapInstance = vueRef(null);
-            const markers = [];
-            const expenseGroupBy = vueRef(false);
-            const menu = [{id:'plan', icon:'ph-calendar'}, {id:'map', icon:'ph-map-pin'}, {id:'transport', icon:'ph-train'}, {id:'lists', icon:'ph-shopping-cart'}, {id:'money', icon:'ph-currency-dollar'}, {id:'overview', icon:'ph-list'}];
-            const tempSetup = vueRef({ dest: '', start: '', end: '' });
-
-            const tripData = vueRef({ setup: null, days: [], trans: [], lists: { food: [], shopping: [] }, expenses: [] });
             const isSyncing = vueRef(false);
-            const newExpense = vueRef({ type: 'F&B', currency: 'JPY', item: '', amount: null, 
+            const tempSetup = vueRef({ dest: '', start: '', end: '' });
+            const tripData = vueRef({ setup: null, days: [], trans: [], lists: { food: [], shopping: [] }, expenses: [] });
+            const newExpense = vueRef({ type: 'F&B', currency: 'JPY', item: '', amount: null, rate: 0.052 });
 
-rate: 0.05 });
+            const menu = [
+                {id:'plan', icon:'ph-calendar'}, 
 
-            // ===== 新增：Auth 函數 =====
-            const login = () => signInWithPopup(auth, provider).catch(err => alert("登入失敗: " + err.message));
-            const logout = () => signOut(auth).then(() => { location.reload(); });
+                {id:'map', icon:'ph-map-pin'}, 
+                {id:'transport', icon:'ph-train'}, 
+                {id:'lists', icon:'ph-shopping-cart'}, 
+                {id:'money', icon:'ph-currency-dollar'}
+            ];
 
-            // ===== 封裝：資料載入邏輯 =====
+            // 登入狀態監聽
+            onMounted(() => {
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        currentUser.value = user;
+                        if (whitelist.map(e => e.toLowerCase()).includes(user.email.toLowerCase())) {
+                            isAuthorized.value = true;
+                            loadTripData();
+                        }
+                    } else {
+                        isAuthorized.value = false;
+
+                        currentUser.value = null;
+                    }
+                });
+            });
+
+            const login = () => signInWithPopup(auth, provider);
+            const logout = () => signOut(auth).then(() => { window.location.reload(); });
+
             const loadTripData = () => {
                 const id = new URLSearchParams(window.location.search).get('id');
                 if (id) {
@@ -358,45 +344,37 @@ rate: 0.05 });
                             if(!data.trans) data.trans = [];
                             if(!data.expenses) data.expenses = [];
                             if(!data.lists) data.lists = { food: [], shopping: [] };
-                            data.days.forEach(d => { if(!d.city) d.city = ''; });
                             tripData.value = data;
-                            tripData.value.days.forEach((_, i) => fetchWeatherByDay(i));
                             nextTick(() => isSyncing.value = false);
                         }
                     });
-                } else { showModal.value = true; }
+                } else {
+                    showModal.value = true;
+                }
             };
 
-            const totalHKDCost = computed(()=> {
-                if (!tripData.value.expenses) return "0";
-                return tripData.value.expenses.reduce((sum, e) => sum + ((Number(e.amount) || 0) * (Number(e.rate) || 1)), 0).toLocaleString();
-            });
+            // 強制同步到 Firebase
+            const forceSync = () => {
+                if (!tripId.value || isSyncing.value) return;
 
-            const groupedExpenses = computed(() => {
-                const groups = {};
-                (tripData.value.expenses || []).forEach(item => {
-                    const t = item.type || 'Other';
-                    if (!groups[t]) groups[t] = { items: [], total: 0 };
-                    groups[t].items.push(item);
-                    groups[t].total += Math.round((item.amount || 0) * (item.rate || 1));
-
-                });
-                return groups;
-            });
-
-            const sortedLists = computed(() => {
-                if (!tripData.value || !tripData.value.lists) return { food: [], shopping: [] };
-                const lists = tripData.value.lists;
-                return {
-                    food: [...(lists.food || [])].sort((a, b) => (a.done === b.done) ? 0 : a.done ? 1 : -1),
-                    shopping: [...(lists.shopping || [])].sort((a, b) => (a.done === b.done) ? 0 : a.done ? 1 : -1)
-                };
-            });
-            
-            const getTypeClass = (t) => {
-                const map = {'F&B':'bg-orange-100 text-orange-600', 'Transport':'bg-blue-100 text-blue-600', 'Shopping':'bg-pink-100 text-pink-600', 'Hotel':'bg-emerald-100 text-emerald-600'};
-                return map[t] || 'bg-slate-100 text-slate-600';
+                const cleanData = JSON.parse(JSON.stringify(tripData.value));
+                update(ref(db, 'trips/' + tripId.value), cleanData);
             };
+
+            // 自動排序行程
+            const sortedItems = computed(() => {
+                const day = tripData.value.days[currentDayIdx.value];
+                if (!day || !day.items) return [];
+                return [...day.items].sort((a, b) => (a.time || "00:00").localeCompare(b.time || "00:00"));
+            });
+
+            const totalHKDCost = computed(() => {
+                if (!tripData.value.expenses) 
+
+return "0";
+                const total = tripData.value.expenses.reduce((sum, e) => sum + (Number(e.amount || 0) * Number(e.rate || 0)), 0);
+                return Math.round(total).toLocaleString();
+            });
 
             const formatDayDate = (idx) => {
                 if (!tripData.value.setup?.startDate) return '';
@@ -405,205 +383,85 @@ rate: 0.05 });
                 return (d.getMonth() + 1) + '/' + d.getDate();
             };
 
-            const addNewExpense = () => {
-                if(!newExpense.value.amount || !newExpense.value.item) return 
-
-alert("Please fill amount and item");
-                if(!tripData.value.expenses) tripData.value.expenses = [];
-                tripData.value.expenses.unshift({ ...newExpense.value });
-                newExpense.value.item = ''; 
-                newExpense.value.amount = null;
-            };
-
-            const moveExpense = (idx, dir) => {
-                const target = idx + dir;
-                if (target < 0 || target >= tripData.value.expenses.length) return;
-                const arr = tripData.value.expenses;
-                [arr[idx], arr[target]] = [arr[target], arr[idx]];
-            };
-
-            const sortPlanByTime = () => {
-                const day = 
-
-tripData.value.days[currentDayIdx.value];
-                if (day?.items) day.items.sort((a, b) => (a.time || "").localeCompare(b.time || ""));
-            };
-
-            const timeConflictMap = computed(() => {
-                const map = {};
-                if (!tripData.value.days) return map;
-                tripData.value.days.forEach((day, dayIdx) => {
-                    map[dayIdx] = [];
-                    if (!day.items || day.items.length < 2) return;
-                    for (let i = 1; i < day.items.length; i++) {
-                        const prev = day.items[i - 1];
-                        const curr = day.items[i];
-                        if (!prev.time || !curr.time) 
-
-continue;
-                        if (curr.time < prev.time) map[dayIdx].push(i);
-                    }
-                });
-                return map;
-            });	    
-
             const addItem = () => {
-                if (!tripData.value.days[currentDayIdx.value].items) tripData.value.days[currentDayIdx.value].items = [];
+                if (!
+
+tripData.value.days[currentDayIdx.value].items) tripData.value.days[currentDayIdx.value].items = [];
                 tripData.value.days[currentDayIdx.value].items.push({ time: '12:00', activity: '', location: '' });
+                forceSync();
             };
 
-            const addListItem = (lt) => {
+            const removeItem = (i) => {
+                // 獲取當前排序後的項目
+                const itemToRemove = sortedItems.value[i];
+                // 在原始數據中尋找並刪除
+                const originalIndex = tripData.value.days[currentDayIdx.value].items.indexOf(itemToRemove);
+                if (originalIndex > -1) {
+                    
 
-                if (!tripData.value.lists[lt]) tripData.value.lists[lt] = [];
-                tripData.value.lists[lt].push({ text: '', done: false });
+tripData.value.days[currentDayIdx.value].items.splice(originalIndex, 1);
+                }
+                forceSync();
             };
 
             const addTransport = () => {
                 if(!tripData.value.trans) tripData.value.trans = [];
                 tripData.value.trans.push({type:'Flight', no:'', cost:'', time:'', duration:'', note:'' });
+                forceSync();
             };
 
-            const fetchWeatherByDay = async (idx) => {
-                const day = tripData.value.days[idx];
-                if (!day || !day.city) return;
-                try {
-                    const geoRes = await 
+            const addListItem = (lt) => {
+                if (!tripData.value.lists[lt]) tripData.value.lists[lt] = [];
+                tripData.value.lists[lt].push({ text: '', done: false });
+                forceSync();
 
-fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(day.city)}`);
-                    const geoData = await geoRes.json();
-                    if (!geoData[0]) return;
-                    const { lat, lon } = geoData[0];
-                    const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weathercode,temperature_2m_max&timezone=auto`);
-                    const wData = await wRes.json();
-                    const dateStr = new Date(new Date(tripData.value.setup.startDate).getTime() + idx * 86400000).toISOString().split('T')[0];
-                    const dIdx = wData.daily.time.indexOf(dateStr);
-
-                    if (dIdx !== -1) {
-                        const code = wData.daily.weathercode[dIdx];
-                        let desc = "Cloudy", icon = "🌤️";
-                        if (code === 0) { desc = "Sunny"; icon = "☀️"; }
-                        else if (code > 0 && code < 4) { desc = "Cloudy"; icon = "⛅"; }
-                        else if (code >= 51 && code <= 67) { desc = "Rain"; icon = "🌧️"; }
-                        else if (code >= 71 && code <= 77) { desc = "Snow"; icon = "❄️"; }
-                        else if (code >= 80) { desc = "Thunder"; icon = "⛈️"; }
-                        day.weather = { desc, icon, temp: Math.round(wData.daily.temperature_2m_max[dIdx]) };
-                    } else {
-                        day.weather = { desc: "N/A", 
-
-icon: "📅", temp: "--" };
-                    }
-                } catch (e) { console.error("Weather error", e); }
             };
 
-            const exportOverviewPDF = () => { window.print(); };
-
-            // ===== 修改：onMounted 改為監聽 Auth =====
-            onMounted(() => {
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        currentUser.value = user;
-                        // 檢查 Email 是否在白名單內
-                        if (whitelist.includes(user.email)) {
-                            isAuthorized.value = true;
-                            loadTripData(); // 授權成功
-
-才載入資料
-                        } else {
-                            isAuthorized.value = false;
-                            // 不在白名單則不讀取資料
-                        }
-                    } else {
-                        currentUser.value = null;
-                        isAuthorized.value = false;
-                    }
-                });
-            });
-
-            const initMap = () => {
-                nextTick(() => {
-                    if (mapInstance.value) { mapInstance.value.invalidateSize(); updateMarkers(); return; }
-                    mapInstance.value = L.map('map', { zoomControl: false }).setView([35.68, 139.76], 13);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapInstance.value);
-                    updateMarkers();
-                });
+            const addNewExpense = () => {
+                if(!newExpense.value.amount || !newExpense.value.item) return;
+                if(!tripData.value.expenses) tripData.value.expenses = [];
+                tripData.value.expenses.unshift({ ...newExpense.value });
+                newExpense.value.item = ''; newExpense.value.amount = null;
+                forceSync();
             };
 
-            const updateMarkers = async () => {
-                if (!mapInstance.value || !tripData.value.days[currentDayIdx.value]) return;
-                markers.forEach(m => mapInstance.value.removeLayer(m)); markers.length = 0;
-                const day = tripData.value.days[currentDayIdx.value];
-                const points = (day.items || []).filter(it => it.location);
-                const bounds = [];
-                for (const p of points) {
-                    try {
-                        const res = await 
-
-fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(p.location)}`);
-                        const data = await res.json();
-                        if (data[0]) {
-                            const marker = L.marker([data[0].lat, data[0].lon]).addTo(mapInstance.value).bindPopup(`<b>${p.activity}</b>`);
-                            markers.push(marker); bounds.push([data[0].lat, data[0].lon]);
-                        }
-                    } catch (e) {}
-                }
-                if (bounds.length > 0) mapInstance.value.fitBounds(bounds, { padding: [50, 50] });
+            const getTypeClass = (t) => {
+                const map = {'F&B':'bg-orange-100 text-orange-600', 'Transport':'bg-blue-100 text-blue-600', 'Shopping':'bg-pink-100 text-pink-600', 'Hotel':'bg-emerald-100 text-emerald-600'};
+                return map[t] || 'bg-slate-100 text-slate-600';
             };
-
-            watch(view, (v) => { if (v === 'map') 
-
-initMap(); });
-            watch(currentDayIdx, () => { if (view.value === 'map') updateMarkers(); });
-            watch(tripData, (nv) => {
-                if (isSyncing.value || !tripId.value || !isAuthorized.value) return;
-                update(ref(db, 'trips/' + tripId.value), JSON.parse(JSON.stringify(nv)));
-            }, { deep: true });
 
             const createNewTrip = () => {
-                if(!tempSetup.value.dest || !tempSetup.value.start) return alert("Missing info");
+                if(!tempSetup.value.dest || !tempSetup.value.start) return alert("請填寫目的地與日期");
                 const s = new Date(tempSetup.value.start), e = new Date(tempSetup.value.end || tempSetup.value.start);
                 const diff = Math.ceil(Math.abs(e - s) / 86400000) + 1;
-
                 tripData.value.setup = { destination: tempSetup.value.dest, startDate: tempSetup.value.start };
                 tripData.value.days = Array.from({ length: diff }, () => ({ hotel: '', items: [], city: '' }));
                 const id = 'trip_' + Math.random().toString(36).substr(2, 9);
-                set(ref(db, 'trips/' + id), JSON.parse(JSON.stringify(tripData.value))).then(() => { window.location.search = `?id=${id}`; });
+
+                set(ref(db, 'trips/' + id), JSON.parse(JSON.stringify(tripData.value))).then(() => {
+                    window.location.search = `?id=${id}`;
+                });
             };
 
             const openGoogleMap = (q) => { if(q) window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank'); };
-            const openGoogleSearch = (q) => { if(q) window.open(`https://
-
-www.google.com/search?q=${encodeURIComponent(q)}`, '_blank'); };
-            const copyShareLink = () => { navigator.clipboard.writeText(window.location.href); alert('連結已複製！'); };
-            const centerOnUser = () => { navigator.geolocation.getCurrentPosition((pos) => { mapInstance.value.setView([pos.coords.latitude, pos.coords.longitude], 15); }); };
             
-            const exportToExcel = () => {
-                const wb = XLSX.utils.book_new();
-                const pRows = [];
-                tripData.value.days.forEach((d, i) => {
-                    pRows.push({ 日期: `Day ${i+1}`, 類型: '城市', 內容: d.city, 地點: '' });
-                    pRows.push({ 日期: `Day ${i+1}`, 類型: '住宿', 內容: d.hotel, 地點: '' });
-                    if(d.items) d.items.forEach(it=> pRows.push({ 日期: `Day ${i+1}`, 類型: '行程', 內容: it.activity, 時間: it.time, 地點: it.location }));
-                });             
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(pRows), "行程");
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(tripData.value.trans || []), "交通");
-                const lRows = [];
-                ['food', 'shopping'].forEach(k => (tripData.value.lists[k] || []).forEach(it => lRows.push({ 類別: k, 內容: it.text, 狀態: it.done?'完成':'待辦' })));
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(lRows), "清單");
-                XLSX.utils.book_append_sheet(wb, 
-
-XLSX.utils.json_to_sheet(tripData.value.expenses || []), "支出");
-                XLSX.writeFile(wb, `Trip_${tripData.value.setup.destination}.xlsx`);
+            // 地圖功能
+            let mapInstance = null;
+            const initMap = () => {
+                nextTick(() => {
+                    if (mapInstance) return;
+                    mapInstance = L.map('map', { zoomControl: false }).setView([35.68,139.76], 13);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapInstance);
+                });
             };
+            watch(view, (v) => { if (v === 'map') initMap(); });
 
             return {
-                view, menu, currentDayIdx, tripData, showModal, tempSetup, totalHKDCost, formatDayDate, newExpense, expenseGroupBy, groupedExpenses, getTypeClass,
-                createNewTrip, timeConflictMap, addItem, addListItem, sortedLists, addTransport, addNewExpense, moveExpense, sortPlanByTime, openGoogleMap, openGoogleSearch, copyShareLink, centerOnUser, 
-                exportToExcel, exportOverviewPDF, fetchWeatherByDay,
-                // 新增導出變數
-
-                login, logout, currentUser, isAuthorized
+                view, menu, currentDayIdx, tripData, showModal, tempSetup, totalHKDCost, formatDayDate, newExpense, isAuthorized, currentUser, sortedItems,
+                login, logout, createNewTrip, addItem, removeItem, addListItem, addTransport, addNewExpense, openGoogleMap, forceSync, getTypeClass
             };
         }
+
     }).mount('#app');
 </script>
 </body>
