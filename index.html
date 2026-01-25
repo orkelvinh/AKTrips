@@ -85,13 +85,21 @@
 
                 <div v-if="tripData.days[currentDayIdx]" class="space-y-3">
                     <div class="bg-blue-50 p-3 rounded-2xl border border-blue-100 flex items-center gap-2">
-                        <input v-model="tripData.days[currentDayIdx].city" @change="fetchWeatherByDay(currentDayIdx)" placeholder="目的地城市" class="flex-1 bg-white p-2 rounded-lg text-sm font-bold outline-none border min-w-0">
-                        <div class="flex items-center gap-1 bg-white p-2 rounded-lg border text-xs font-bold shrink-0 min-w-[70px] justify-center h-[38px]">
-
-                            <span v-if="tripData.days[currentDayIdx].weather">{{ tripData.days[currentDayIdx].weather.icon }} {{ tripData.days[currentDayIdx].weather.temp }}°C</span>
-                            <span v-else class="text-gray-300">天氣</span>
-                        </div>
-                    </div>
+    			<input v-model="tripData.days[currentDayIdx].city" @change="forceSync" placeholder="目的地城市" class="flex-1 bg-white p-2 rounded-lg text-sm font-bold outline-none border min-w-0">
+    
+    			<div class="flex flex-col items-end pl-2">
+        			<div v-if="weatherDisplay" class="text-right">
+            				<div class="flex items-center justify-end gap-1 text-indigo-600">
+                    <i :class="['ph-duotone', weatherDisplay.icon, 'text-2xl']"></i>
+                				<span class="text-xl font-bold font-mono whitespace-nowrap">{{ weatherDisplay.temp }}</span>
+            				</div>
+            				<div class="text-[10px] text-slate-400 flex items-center gap-1 justify-end mt-0.5">
+                    <i :class="weatherDisplay.isForecast ? 'ph-bold ph-calendar' : 'ph-bold ph-map-pin'"></i>
+                    {{ weatherDisplay.label }}
+            				</div>
+        			</div>
+    			</div>
+		</div>
 
                     <div class="flex gap-2 items-center">
                         <input v-model="tripData.days[currentDayIdx].hotel" @change="forceSync" placeholder="下榻酒店" class="flex-1 bg-orange-50 p-3 rounded-2xl text-sm font-bold outline-none border border-orange-100 min-w-0">
@@ -135,12 +143,12 @@
                         <button @click="tripData.trans.splice(i,1); forceSync()" class="text-red-300 text-sm">刪除</button>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
-                        <input v-model="t.no" @change="forceSync" placeholder="班次編號" class="bg-gray-50 p-2 rounded-lg text-xs outline-none font-bold">
-                        <input v-model="t.cost" @change="forceSync" placeholder="預估費用" class="bg-gray-50 p-2 rounded-lg text-xs outline-none font-bold">
-                        <input v-model="t.time" @change="forceSync" placeholder="時間" class="bg-gray-50 p-2 rounded-lg text-xs outline-none font-bold">
-                        <input v-model="t.duration" @change="forceSync" placeholder="預計時長" class="bg-gray-50 p-2 rounded-lg text-xs outline-none font-bold">
+                        <input v-model="t.no" @change="forceSync" placeholder="班次編號" class="w-full bg-gray-50 p-2 rounded-lg text-xs outline-none resize-none">
+                        <input v-model="t.cost" @change="forceSync" placeholder="預估費用" class="w-full bg-gray-50 p-2 rounded-lg text-xs outline-none resize-none">
+                        <input v-model="t.time" @change="forceSync" placeholder="時間" class="w-full bg-gray-50 p-2 rounded-lg text-xs outline-none resize-none">
+                        <input v-model="t.duration" @change="forceSync" placeholder="預計時長" class="w-full bg-gray-50 p-2 rounded-lg text-xs outline-none resize-none">
                     </div>
-                    <textarea v-model="t.note" @change="forceSync" placeholder="交通筆記..." rows="2" class="w-full bg-gray-50 p-2 rounded-lg text-xs outline-none resize-none"></textarea>
+                    <textarea v-model="t.note" @change="forceSync" placeholder="交通筆記..." rows="3" class="w-full bg-gray-50 p-2 rounded-lg text-xs outline-none resize-none"></textarea>
                 </div>
                 <button @click="addTransport" class="w-full py-4 bg-sky-600 text-white rounded-2xl font-bold shadow-lg">+ 新增交通</button>
             </section>
@@ -155,7 +163,8 @@
                         <div v-for="(item, i) in sortedList(lt)" :key="i" class="p-4 flex items-center gap-3 bg-white">
                             <input type="checkbox" v-model="item.done" @change="forceSync" class="w-5 h-5 accent-sky-600">
                             <input v-model="item.text" @change="forceSync" :class="{'line-through text-gray-300': item.done}" class="flex-1 outline-none text-sm font-bold min-w-0">
-                            <button @click="removeListItem(lt, item)" class="text-gray-300 shrink-0">×</button>
+                            <a v-if="item.text":href="'https://www.google.com/maps/search/' + item.text"target="_blank"class="bg-sky-100 text-sky-600 px-2 py-1 rounded text-[10px] font-bold"> Google </a>
+			    <button @click="removeListItem(lt, item)" class="text-gray-300 shrink-0">×</button>
                         </div>
                         <button @click="addListItem(lt)" class="w-full py-4 text-xs text-sky-500 font-black">+ 新增項目</button>
                     </div>
@@ -276,6 +285,28 @@
             const tempSetup = vueRef({ dest: '', start: '', end: '' });
             const tripData = vueRef({ setup: null, days: [], trans: [], lists: { food: [], shopping: [] }, expenses: [] });
             const newExpense = vueRef({ type: '餐飲', currency: 'JPY', item: '', amount: null, rate: 1.0 });
+	    // 新增天氣狀態與計算邏輯
+            const weather = vueRef({ location: '', temp: '--', icon: 'ph-cloud', daily: null });
+            
+            const weatherDisplay = computed(() => {
+                const day = tripData.value.days[currentDayIdx.value];
+                if (!day || !day.city) return null;
+                if (weather.value.daily && tripData.value.setup?.startDate) {
+                    const d = new Date(tripData.value.setup.startDate);
+                    d.setDate(d.getDate() + currentDayIdx.value);
+                    const dateStr = d.toISOString().split('T')[0];
+                    const idx = weather.value.daily.time.indexOf(dateStr);
+                    if (idx !== -1) {
+                        return {
+                            temp: Math.round(weather.value.daily.temperature_2m_max[idx]) + '°',
+                            icon: getWeatherIcon(weather.value.daily.weathercode[idx]),
+                            label: 'Forecast',
+                            isForecast: true
+                        };
+                    }
+                }
+                return { temp: weather.value.temp + '°', icon: weather.value.icon, label: 'Current', isForecast: false };
+            });
 
             const menu = [
                 {id:'plan', icon:'ph-calendar'}, 
@@ -380,19 +411,33 @@
                 return (d.getMonth() + 1) + '/' + d.getDate();
             };
 
-            const fetchWeatherByDay = async (idx) => {
-                const city = tripData.value.days[idx].city;
-                if (!city) return;
-                try {
-                    const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=895284fb2d2c1d87e022411c469f445e&units=metric`);
-                    const d = await res.json();
-                    if (d.main) {
-                        const icons = { 'Clear': '☀️', 'Clouds': '☁️', 'Rain': '🌧️', 'Snow': '❄️', 'Thunderstorm': '⚡' };
-                        tripData.value.days[idx].weather = { temp: Math.round(d.main.temp), icon: icons[d.weather[0].main] || '⛅' };
-                        forceSync();
-                    }
-                } catch (e) { console.error("Weather error"); }
+	    // --- Weather 邏輯 ---
+            const getWeatherIcon = (code) => {
+                const icons = { 0: 'ph-sun', 1: 'ph-cloud-sun', 2: 'ph-cloud-sun', 3: 'ph-cloud', 45: 'ph-cloud-fog', 51: 'ph-cloud-rain', 61: 'ph-cloud-rain', 71: 'ph-cloud-snow', 95: 'ph-cloud-lightning' };
+                return icons[code] || 'ph-cloud';
             };
+
+            const fetchWeather = async (locName) => {
+                if (!locName) return;
+                try {
+                    weather.value.location = locName;
+                    const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locName)}&limit=1`);
+                    const geoData = await geoRes.json();
+                    if(geoData?.[0]) {
+                        const {lat, lon} = geoData[0];
+                        const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto&forecast_days=16`);
+                        const wData = await wRes.json();
+                        weather.value.temp = Math.round(wData.current_weather.temperature);
+                        weather.value.icon = getWeatherIcon(wData.current_weather.weathercode);
+                        if(wData.daily) weather.value.daily = wData.daily;
+                    }
+                } catch(e) { weather.value.temp = '--'; }
+            };
+
+            // 監聽城市變化
+            watch(() => tripData.value.days[currentDayIdx.value]?.city, (newCity) => {
+                if(newCity) fetchWeather(newCity);
+            }, { immediate: true });
 
             const addItem = () => {
                 if (!tripData.value.days[currentDayIdx.value].items) tripData.value.days[currentDayIdx.value].items = [];
@@ -541,7 +586,7 @@
             return {
                 view, menu, currentDayIdx, tripData, totalHKDCost, formatDayDate, newExpense, isAuthorized, currentUser, dayLocations, sortedItems,
                 showModal, tempSetup, createNewTrip, login, logout, addItem, removeItemByObject, addListItem, removeListItem, addTransport, addNewExpense, 
-                sortExpenses, moveExpense, exportToExcel, downloadPDF, openGoogleMap, forceSync, searchAndMark, fetchWeatherByDay, sortedList
+                sortExpenses, moveExpense, exportToExcel, downloadPDF, openGoogleMap, forceSync, searchAndMark, fetchWeather, weatherDisplay, sortedList
             };
         }
     }).mount('#app');
