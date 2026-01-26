@@ -116,6 +116,9 @@
                             <input v-model="item.location" @change="forceSync" placeholder="地點名稱" class="flex-1 bg-transparent text-xs text-gray-500 outline-none min-w-0">
                             <button @click="openGoogleMap(item.location)" class="text-sky-500 shrink-0"><i class="ph ph-map-pin"></i></button>
                         </div>
+                        <div class="flex gap-2 items-center bg-gray-50 p-2 rounded-lg">
+                            <input v-model="item.remark" @change="forceSync" placeholder="備註" class="flex-1 bg-transparent text-xs text-gray-500 outline-none min-w-0">
+                        </div>
                     </div>
                     <button @click="addItem" class="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl text-gray-400 font-bold text-sm">+ 新增項目</button>
                 </div>
@@ -442,7 +445,7 @@
 
             const addItem = () => {
                 if (!tripData.value.days[currentDayIdx.value].items) tripData.value.days[currentDayIdx.value].items = [];
-                tripData.value.days[currentDayIdx.value].items.push({ time: '12:00', activity: '', location: '' });
+                tripData.value.days[currentDayIdx.value].items.push({ time: '00:00', activity: '', location: '' });
                 forceSync();
             };
 
