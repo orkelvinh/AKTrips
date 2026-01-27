@@ -117,8 +117,15 @@
                             <button @click="openGoogleMap(item.location)" class="text-sky-500 shrink-0"><i class="ph ph-map-pin"></i></button>
                         </div>
                         <div class="flex gap-2 items-center bg-gray-50 p-2 rounded-lg">
-                            <input v-model="item.remark" @change="forceSync" placeholder="備註" class="flex-1 bg-transparent text-xs text-gray-500 outline-none min-w-0">
-                        </div>
+    			  <textarea 
+        			v-model="item.remark" 
+        			@change="forceSync" 
+        			@input="(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px' }"
+        			placeholder="備註" 
+        			rows="1"
+        			class="flex-1 bg-transparent text-xs text-gray-500 outline-none min-w-0 resize-none overflow-hidden leading-relaxed"
+    			  ></textarea>
+			</div>
                     </div>
                     <button @click="addItem" class="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl text-gray-400 font-bold text-sm">+ 新增項目</button>
                 </div>
@@ -552,21 +559,43 @@
                 forceSync();
             };
 
-            const exportToExcel = () => {
-                const wb = XLSX.utils.book_new();
-                const pRows = [];
-                tripData.value.days.forEach((d, i) => {
-                    pRows.push({ 日期: `Day ${i+1}`, 類型: '住宿', 內容: d.hotel, 地點: '' });
-                    if(d.items) d.items.forEach(it => pRows.push({ 日期: `Day ${i+1}`, 類型: '行程', 內容: it.activity, 時間: it.time, 地點: it.location }));
-                });             
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(pRows), "行程");
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(tripData.value.trans || []), "交通");
-                const lRows = [];
-                ['food', 'shopping'].forEach(k => (tripData.value.lists[k] || []).forEach(it => lRows.push({ 類別: k, 內容: it.text, 狀態: it.done?'完成':'待辦' })));
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(lRows), "清單");
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(tripData.value.expenses || []), "支出");
-                XLSX.writeFile(wb, `Trip_Plan.xlsx`);
-            };
+	    const exportToExcel = () => {
+    		const wb = XLSX.utils.book_new();
+    
+        	const pRows = [];
+    		tripData.value.days.forEach((d, i) => {
+              		pRows.push({ 日期: `Day ${i+1}`, 類型: '住宿', 內容: d.hotel, 時間: '', 地點: '', 備註: ''});
+                	if(d.items) {
+            		   d.items.forEach(it => {
+                		pRows.push({ 日期: `Day ${i+1}`, 類型: '行程', 內容: it.activity, 時間: it.time, 地點: it.location, 備註: it.remark || '' 
+                		});
+            		   });
+        		}
+    		});             
+    		XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(pRows), "行程");
+
+    		const tRows = (tripData.value.trans || []).map(t => ({
+        		類型: t.type, 班次: t.no, 費用: t.cost, 時間: t.time, 時長: t.duration, 備註: t.note || t.remark || '' 
+    		}));
+    		XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(tRows), "交通");
+
+        	const lRows = [];
+    		['food', 'shopping'].forEach(k => {
+        		(tripData.value.lists[k] || []).forEach(it => {
+            		  lRows.push({ 
+                		類別: k === 'food' ? '必吃美食' : '購物清單', 內容: it.text, 狀態: it.done ? '完成' : '待辦', 備註: it.remark || '' 
+            		  });
+        		});
+    		});
+    		XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(lRows), "清單");
+
+        	const eRows = (tripData.value.expenses || []).map(e => ({
+        		類型: e.type, 項目: e.item, 金額: e.amount, 幣別: e.currency, 匯率: e.rate, 港幣估算: Math.round(e.amount * e.rate), 備註: e.remark || '' 
+    		}));
+    		XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(eRows), "支出");
+
+        	XLSX.writeFile(wb, `Trip_Plan_${tripData.value.setup.destination}.xlsx`);
+	    };
 
             const downloadPDF = () => {
                 const element = document.getElementById('summary-content');
